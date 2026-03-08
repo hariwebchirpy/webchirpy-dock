@@ -1,63 +1,121 @@
-name: Auto-Generate Commit Documentation
+name: Auto-Generate Documentation
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    types:
+      - closed
 
 jobs:
-  generate-docs:
+  generate-commit-docs:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Source Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history to correctly identify merge commits
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install Dependencies
         run: npm install
 
-      - name: Run Documentation Generator
+      - name: Run Commit Documentation Generator
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
+          PROJECT_NAME: ${{ secrets.PROJECT_NAME != '' && secrets.PROJECT_NAME || github.event.repository.name }}
         run: node scripts/generateCommitDocs.js
 
-      - name: Clone Documentation Repository
-        env:
-          DOCS_REPO: ${{ secrets.DOCS_REPO }}
-          DOCS_REPO_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
-        run: |
-          git clone https://x-access-token:${DOCS_REPO_TOKEN}@github.com/${DOCS_REPO}.git docs-repo
+      - name: Checkout Documentation Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.DOCS_REPO }}
+          token: ${{ secrets.DOCS_REPO_TOKEN }}
+          path: docs-repo
+          ref: main
 
-      - name: Move Generated Documentation
+      - name: Copy Commit Documentation into Docs Repository
         env:
-          PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
+          PROJECT_NAME: ${{ secrets.PROJECT_NAME != '' && secrets.PROJECT_NAME || github.event.repository.name }}
         run: |
           mkdir -p docs-repo/content/projects/${PROJECT_NAME}/changes/
           if [ -d "content/projects/${PROJECT_NAME}/changes/" ]; then
-            cp content/projects/${PROJECT_NAME}/changes/*.md docs-repo/content/projects/${PROJECT_NAME}/changes/
+            find content/projects/${PROJECT_NAME}/changes -maxdepth 1 -name "*.md" -type f -exec cp {} docs-repo/content/projects/${PROJECT_NAME}/changes/ \;
           fi
 
-      - name: Commit and Push to Documentation Repository
+      - name: Open or Update Docs PR (Commit Docs)
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.DOCS_REPO_TOKEN }}
+          path: docs-repo
+          commit-message: docs: auto-generate commit documentation for ${{ github.repository }}
+          title: docs: sync commit documentation for ${{ github.repository }}
+          body: |
+            ## Summary
+            - Syncs auto-generated commit documentation from `${{ github.repository }}`.
+            - Source workflow run: `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`.
+          branch: automation/${{ github.event.repository.name }}-commit-docs
+          base: main
+          delete-branch: false
+
+  generate-pr-discussion-docs:
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate PR Discussion Timeline
         env:
-          DOCS_REPO_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
-        run: |
-          cd docs-repo
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PROJECT_NAME: ${{ secrets.PROJECT_NAME != '' && secrets.PROJECT_NAME || github.event.repository.name }}
+        run: node scripts/generatePrDiscussionTimeline.js
 
-          git add .
-          if git diff --staged --quiet; then
-            echo "No new documentation to commit."
-          else
-            git commit -m "docs: auto-generate commit documentation for ${GITHUB_REPOSITORY}"
-            git push origin main
+      - name: Checkout Documentation Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.DOCS_REPO }}
+          token: ${{ secrets.DOCS_REPO_TOKEN }}
+          path: docs-repo
+          ref: main
+
+      - name: Copy PR Discussion Timeline into Docs Repository
+        env:
+          PROJECT_NAME: ${{ secrets.PROJECT_NAME != '' && secrets.PROJECT_NAME || github.event.repository.name }}
+        run: |
+          mkdir -p docs-repo/content/projects/${PROJECT_NAME}/changes/pr-discussions/
+          if [ -d "content/projects/${PROJECT_NAME}/changes/pr-discussions/" ]; then
+            find content/projects/${PROJECT_NAME}/changes/pr-discussions -maxdepth 1 -name "*.md" -type f -exec cp {} docs-repo/content/projects/${PROJECT_NAME}/changes/pr-discussions/ \;
           fi
+
+      - name: Open or Update Docs PR (PR Discussion Timeline)
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.DOCS_REPO_TOKEN }}
+          path: docs-repo
+          commit-message: docs: add PR discussion timeline for ${{ github.repository }}#${{ github.event.pull_request.number }}
+          title: docs: sync PR discussion timeline for ${{ github.repository }}#${{ github.event.pull_request.number }}
+          body: |
+            ## Summary
+            - Adds/updates PR discussion timeline docs for merged PR `${{ github.repository }}#${{ github.event.pull_request.number }}`.
+            - Includes issue comments, review comments, and review summaries in chronological order.
+            - Source workflow run: `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`.
+          branch: automation/${{ github.event.repository.name }}-pr-discussions
+          base: main
+          delete-branch: false

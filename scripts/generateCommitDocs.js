@@ -38,36 +38,46 @@ async function generateCommitDocs() {
       return;
     }
 
-    // 1. Detect the latest commit
-    const commitHash = execSync('git rev-parse HEAD').toString().trim();
-    if (!commitHash) {
-      console.log('No commits found.');
-      return;
+    const beforeSha = (process.env.GITHUB_EVENT_BEFORE || '').trim();
+    const afterSha = (process.env.GITHUB_EVENT_AFTER || '').trim();
+
+    // 1. Detect commits relevant to the push event
+    let commitHashes = [];
+    if (beforeSha && afterSha) {
+      const revRange = `${beforeSha}..${afterSha}`;
+      console.log(`Computing commit range: ${revRange}`);
+      const revList = execSync(`git rev-list --reverse ${revRange}`).toString().trim();
+      if (revList) {
+        commitHashes = revList.split('\n').map((hash) => hash.trim()).filter(Boolean);
+      }
     }
 
-    const commitMessage = execSync(`git log -1 ${commitHash} --pretty=format:"%B"`).toString().trim();
-    const shortHash = commitHash.substring(0, 7);
+    if (commitHashes.length === 0) {
+      const fallbackHash = execSync('git rev-parse HEAD').toString().trim();
+      if (!fallbackHash) {
+        console.log('No commits found.');
+        return;
+      }
+      commitHashes = [fallbackHash];
+      console.warn('No push range found from event context. Falling back to HEAD only.');
+    }
+
     const date = new Date().toISOString().split('T')[0];
-
-    console.log(`Processing commit: ${shortHash} - ${commitMessage}`);
-
-    // 2. Read git diff and changed files
-    const changedFiles = execSync(`git show --name-only --pretty=format:"" ${commitHash}`).toString().trim();
-    let gitDiff = execSync(`git show ${commitHash}`).toString().trim();
-
-    // Truncate diff if it's too long (limit to ~5000 lines)
-    const diffLines = gitDiff.split('\n');
-    if (diffLines.length > 5000) {
-      gitDiff = diffLines.slice(0, 5000).join('\n') + '\n\n... (diff truncated for length)';
-    }
 
     // Attempt to detect project from changed files (e.g., content/projects/XYZ/...)
     let detectedProject = null;
-    const fileLines = changedFiles.split('\n');
-    for (const file of fileLines) {
-      const match = file.match(/^content\/projects\/([^/]+)\//);
-      if (match) {
-        detectedProject = match[1];
+    for (const commitHash of commitHashes) {
+      const changedFilesForCommit = execSync(`git show --name-only --pretty=format:"" ${commitHash}`).toString().trim();
+      const fileLines = changedFilesForCommit.split('\n');
+      for (const file of fileLines) {
+        const match = file.match(/^content\/projects\/([^/]+)\//);
+        if (match) {
+          detectedProject = match[1];
+          break;
+        }
+      }
+
+      if (detectedProject) {
         break;
       }
     }
@@ -81,12 +91,44 @@ async function generateCommitDocs() {
       return;
     }
 
-    // 3. Send information to OpenRouter
+    // 2. Send information to OpenRouter
     const openrouter = new OpenRouter({
       apiKey: apiKey,
     });
 
-    const prompt = `
+    console.log(`Generating documentation via OpenRouter for ${commitHashes.length} commit(s)...`);
+    
+    const modelsToTry = [
+      "openrouter/auto",
+      "google/gemini-3.1-flash-lite-preview",
+      "qwen/qwen3.5-27b",
+      "mistralai/mistral-large-2411"
+    ];
+
+
+    // 3. Save markdown files to the project's changes directory
+    const outputDir = path.join(process.cwd(), 'content', 'projects', repoName, 'changes');
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    for (const [index, commitHash] of commitHashes.entries()) {
+      const commitMessage = execSync(`git log -1 ${commitHash} --pretty=format:"%B"`).toString().trim();
+      const shortHash = commitHash.substring(0, 7);
+      const sequenceNumber = index + 1;
+
+      console.log(`Processing commit ${sequenceNumber}/${commitHashes.length}: ${shortHash} - ${commitMessage}`);
+
+      const changedFiles = execSync(`git show --name-only --pretty=format:"" ${commitHash}`).toString().trim();
+      let gitDiff = execSync(`git show ${commitHash}`).toString().trim();
+
+      // Truncate diff if it's too long (limit to ~5000 lines)
+      const diffLines = gitDiff.split('\n');
+      if (diffLines.length > 5000) {
+        gitDiff = diffLines.slice(0, 5000).join('\n') + '\n\n... (diff truncated for length)';
+      }
+
+      const prompt = `
 Analyze the following git commit and generate developer documentation in markdown format.
 
 Commit Message:
@@ -98,6 +140,9 @@ ${changedFiles}
 Git Diff:
 ${gitDiff}
 
+Commit Order In Push:
+${sequenceNumber} of ${commitHashes.length}
+
 The output markdown MUST follow this EXACT structure:
 
 ---
@@ -105,6 +150,7 @@ title: Code Change
 repo: ${repoName}
 commit: ${commitHash}
 date: ${date}
+sequence: ${sequenceNumber}/${commitHashes.length}
 ---
 
 # Summary
@@ -124,72 +170,58 @@ Explain if setup, environment variables, deployment, or configuration changed.
 List the major files involved.
 `;
 
-    console.log('Generating documentation via OpenRouter...');
-    
-    const modelsToTry = [
-      "openrouter/auto",
-      "google/gemini-3.1-flash-lite-preview",
-      "qwen/qwen3.5-27b",
-      "mistralai/mistral-large-2411"
-    ];
+      let stream;
+      let successfulModel = "";
 
-    let stream;
-    let successfulModel = "";
-
-    for (const model of modelsToTry) {
-      try {
-        console.log(`Attempting with model: ${model}...`);
-        stream = await openrouter.chat.send({
-          chatGenerationParams: {
-            model: model,
-            messages: [
-              { 
-                role: "system", 
-                content: "You are a technical writer specializing in developer documentation. Your task is to analyze git commits and generate clear, concise, and accurate documentation." 
-              },
-              { 
-                role: "user", 
-                content: prompt 
+      for (const model of modelsToTry) {
+        try {
+          console.log(`Attempting with model: ${model}...`);
+          stream = await openrouter.chat.send({
+            chatGenerationParams: {
+              model: model,
+              messages: [
+                {
+                  role: "system",
+                  content: "You are a technical writer specializing in developer documentation. Your task is to analyze git commits and generate clear, concise, and accurate documentation."
+                },
+                {
+                  role: "user",
+                  content: prompt
+                }
+              ],
+              stream: true,
+              provider: {
+                dataCollection: "allow"
               }
-            ],
-            stream: true,
-            provider: {
-              dataCollection: "allow"
             }
-          }
-        });
-        successfulModel = model;
-        break; 
-      } catch (err) {
-        if (model === modelsToTry[modelsToTry.length - 1]) throw err;
-        console.warn(`Model ${model} failed, trying next...`);
+          });
+          successfulModel = model;
+          break;
+        } catch (err) {
+          if (model === modelsToTry[modelsToTry.length - 1]) throw err;
+          console.warn(`Model ${model} failed, trying next...`);
+        }
       }
-    }
 
-    console.log(`Using model: ${successfulModel}`);
+      console.log(`Using model: ${successfulModel}`);
 
-    let markdownContent = "";
-    for await (const chunk of stream) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) {
-        markdownContent += content;
-        process.stdout.write(content);
+      let markdownContent = "";
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content;
+        if (content) {
+          markdownContent += content;
+          process.stdout.write(content);
+        }
       }
+
+      console.log('\nGeneration complete.');
+
+      const fileName = `${date}-${repoName}-${shortHash}.md`;
+      const filePath = path.join(outputDir, fileName);
+
+      fs.writeFileSync(filePath, markdownContent);
+      console.log(`Successfully generated documentation: ${filePath}`);
     }
-
-    console.log('\nGeneration complete.');
-
-    // 4. Save the markdown file to the project's changes directory
-    const outputDir = path.join(process.cwd(), 'content', 'projects', repoName, 'changes');
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-
-    const fileName = `${date}-${repoName}-${shortHash}.md`;
-    const filePath = path.join(outputDir, fileName);
-
-    fs.writeFileSync(filePath, markdownContent);
-    console.log(`Successfully generated documentation: ${filePath}`);
 
   } catch (error) {
     if (error.message.includes('data policy')) {

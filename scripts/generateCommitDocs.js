@@ -106,12 +106,6 @@ async function generateCommitDocs() {
     ];
 
 
-    // 3. Save markdown files to the project's changes directory
-    const outputDir = path.join(process.cwd(), 'content', 'projects', repoName, 'changes');
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-
     for (const [index, commitHash] of commitHashes.entries()) {
       const commitMessage = execSync(`git log -1 ${commitHash} --pretty=format:"%B"`).toString().trim();
       const shortHash = commitHash.substring(0, 7);
@@ -217,6 +211,17 @@ List the major files involved.
       console.log('\nGeneration complete.');
 
       const fileName = `${date}-${repoName}-${shortHash}.md`;
+      const outputDir = path.join(
+        process.cwd(),
+        "content",
+        "projects",
+        repoName,
+        "changes"
+      );
+
+      // create folder if missing
+      fs.mkdirSync(outputDir, { recursive: true });
+
       const filePath = path.join(outputDir, fileName);
 
       fs.writeFileSync(filePath, markdownContent);

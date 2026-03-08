@@ -1,0 +1,52 @@
+name: Auto-Generate Commit Documentation
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-docs:
+    runs-on: ubuntu-latest
+
+    # Permissions required to push changes back to the repository
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2 # Essential to compare with previous commit for diff
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run Documentation Generator
+        # Secrets should be configured in the GitHub repository settings
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: node scripts/generateCommitDocs.js
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage ONLY the generated documentation files
+          git add content/projects/brilliant-office/changes/*.md || true
+
+          # Check if there are changes to commit
+          if git diff --staged --quiet; then
+            echo "No new documentation files were created."
+          else
+            # We use 'chore:' prefix which is ignored by the script to prevent infinite loops
+            git commit -m "chore: auto-generate commit documentation [skip ci]"
+            git push
+          fi

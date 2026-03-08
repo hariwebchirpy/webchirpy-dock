@@ -1,15 +1,15 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const OpenAI = require('openai');
 
 /**
  * Script to automatically generate developer documentation from GitHub commits.
  * Triggered when a PR is merged into main.
+ * Uses OpenRouter for AI generation.
  */
 
 // Load environment variables for local testing
-if (!process.env.OPENAI_API_KEY) {
+if (!process.env.OPENROUTER_API_KEY) {
   try {
     const envPath = path.join(process.cwd(), '.env.local');
     if (fs.existsSync(envPath)) {
@@ -28,6 +28,7 @@ if (!process.env.OPENAI_API_KEY) {
 }
 
 async function generateCommitDocs() {
+  const { OpenRouter } = await import('@openrouter/sdk');
   try {
     // Ensure we are in a git repository
     try {
@@ -37,11 +38,10 @@ async function generateCommitDocs() {
       return;
     }
 
-    // 1. Detect the latest merge commit
-    // Using --merges -1 to get the most recent merge commit
-    const commitHash = execSync('git log --merges -1 --pretty=format:"%H"').toString().trim();
+    // 1. Detect the latest commit
+    const commitHash = execSync('git rev-parse HEAD').toString().trim();
     if (!commitHash) {
-      console.log('No merge commits found.');
+      console.log('No commits found.');
       return;
     }
 
@@ -50,21 +50,31 @@ async function generateCommitDocs() {
     const date = new Date().toISOString().split('T')[0];
     const repoName = process.env.PROJECT_NAME || path.basename(process.cwd());
 
-    console.log(`Processing merge commit: ${shortHash} - ${commitMessage}`);
+    console.log(`Processing commit: ${shortHash} - ${commitMessage}`);
 
-    // 2. Read git diff and changed files for that merge commit
+    // 2. Read git diff and changed files
     const changedFiles = execSync(`git show --name-only --pretty=format:"" ${commitHash}`).toString().trim();
-    
-    // Get diff of the merge commit (shows what the merge introduced)
-    const gitDiff = execSync(`git show ${commitHash}`).toString().trim();
+    let gitDiff = execSync(`git show ${commitHash}`).toString().trim();
 
-    // 3. Send information to OpenAI
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+    // Truncate diff if it's too long (limit to ~5000 lines)
+    const diffLines = gitDiff.split('\n');
+    if (diffLines.length > 5000) {
+      gitDiff = diffLines.slice(0, 5000).join('\n') + '\n\n... (diff truncated for length)';
+    }
+
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey || !apiKey.startsWith('sk-or-')) {
+      console.error('Error: Invalid or missing OPENROUTER_API_KEY. It should start with "sk-or-".');
+      return;
+    }
+
+    // 3. Send information to OpenRouter
+    const openrouter = new OpenRouter({
+      apiKey: apiKey,
     });
 
     const prompt = `
-Analyze the following git merge commit and generate developer documentation in markdown format.
+Analyze the following git commit and generate developer documentation in markdown format.
 
 Commit Message:
 ${commitMessage}
@@ -101,26 +111,63 @@ Explain if setup, environment variables, deployment, or configuration changed.
 List the major files involved.
 `;
 
-    console.log('Generating documentation via OpenAI...');
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { 
-          role: "system", 
-          content: "You are a technical writer specializing in developer documentation. Your task is to analyze git commits and generate clear, concise, and accurate documentation." 
-        },
-        { 
-          role: "user", 
-          content: prompt 
-        }
-      ],
-      temperature: 0.2,
-    });
+    console.log('Generating documentation via OpenRouter...');
+    
+    const modelsToTry = [
+      "openrouter/auto",
+      "google/gemini-3.1-flash-lite-preview",
+      "qwen/qwen3.5-27b",
+      "mistralai/mistral-large-2411"
+    ];
 
-    const markdownContent = response.choices[0].message.content;
+    let stream;
+    let successfulModel = "";
 
-    // 4. Save the markdown file locally (will be moved by the workflow)
-    const outputDir = path.join(process.cwd(), 'temp_docs');
+    for (const model of modelsToTry) {
+      try {
+        console.log(`Attempting with model: ${model}...`);
+        stream = await openrouter.chat.send({
+          chatGenerationParams: {
+            model: model,
+            messages: [
+              { 
+                role: "system", 
+                content: "You are a technical writer specializing in developer documentation. Your task is to analyze git commits and generate clear, concise, and accurate documentation." 
+              },
+              { 
+                role: "user", 
+                content: prompt 
+              }
+            ],
+            stream: true,
+            provider: {
+              dataCollection: "allow"
+            }
+          }
+        });
+        successfulModel = model;
+        break; 
+      } catch (err) {
+        if (model === modelsToTry[modelsToTry.length - 1]) throw err;
+        console.warn(`Model ${model} failed, trying next...`);
+      }
+    }
+
+    console.log(`Using model: ${successfulModel}`);
+
+    let markdownContent = "";
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content;
+      if (content) {
+        markdownContent += content;
+        process.stdout.write(content);
+      }
+    }
+
+    console.log('\nGeneration complete.');
+
+    // 4. Save the markdown file to the project's changes directory
+    const outputDir = path.join(process.cwd(), 'content', 'projects', repoName, 'changes');
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
@@ -130,10 +177,35 @@ List the major files involved.
 
     fs.writeFileSync(filePath, markdownContent);
     console.log(`Successfully generated documentation: ${filePath}`);
-    console.log(`FILENAME=${fileName}`); // Log filename for workflow to capture if needed
 
   } catch (error) {
-    console.error('Error in generateCommitDocs:', error.message);
+    if (error.message.includes('data policy')) {
+      console.error('\n--- OPENROUTER ERROR ---');
+      console.error('Error: Your OpenRouter account privacy settings are blocking free model usage.');
+      console.error('FIX: Go to https://openrouter.ai/settings/privacy and set "Allow data collection" to "Yes".');
+      console.error('------------------------\n');
+    } else {
+      console.error('\n--- ERROR DETAILS ---');
+      console.error('Message:', error.message);
+      if (error.response && error.response.data) {
+        console.error('API Response:', JSON.stringify(error.response.data, null, 2));
+      }
+      console.error('----------------------\n');
+      
+      console.log('Attempting to list available models to help you debug...');
+      try {
+        const { OpenRouter } = await import('@openrouter/sdk');
+        const openrouter = new OpenRouter({ apiKey: process.env.OPENROUTER_API_KEY });
+        const modelsResult = await openrouter.models.list();
+        if (modelsResult && modelsResult.data) {
+          console.log('Available models (first 10):');
+          modelsResult.data.slice(0, 10).forEach(m => console.log(`- ${m.id}`));
+          console.log('Check the full list at: https://openrouter.ai/models');
+        }
+      } catch (listError) {
+        // Ignore listing errors
+      }
+    }
     process.exit(1);
   }
 }

@@ -1,5 +1,9 @@
 name: Auto Generate Documentation
 
+permissions:
+  contents: write
+  pull-requests: write
+
 on:
   push:
     branches:
@@ -9,9 +13,17 @@ permissions:
   contents: write
   pull-requests: write
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
+
+    env:
+      DOCS_REPO: ${{ secrets.DOCS_REPO }}
+      DOCS_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
 
     steps:
       # 1. Checkout source repo
@@ -41,17 +53,16 @@ jobs:
 
       # 5. Checkout documentation repository
       - name: Checkout Docs Repo
+        if: ${{ env.DOCS_REPO != '' }}
         uses: actions/checkout@v4
         with:
-          repository: ${{ secrets.DOCS_REPO }}
-          token: ${{ secrets.DOCS_REPO_TOKEN }}
+          repository: ${{ env.DOCS_REPO }}
+          token: ${{ env.DOCS_TOKEN }}
           path: docs-repo
-          ref: main
 
       # 6. Copy generated docs
       - name: Copy Generated Docs
-        env:
-          PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
+        if: ${{ env.DOCS_REPO != '' }}
         run: |
           SOURCE_PROJECT="${PROJECT_NAME:-${GITHUB_REPOSITORY##*/}}"
 
@@ -81,9 +92,10 @@ jobs:
 
       # 8. Create Pull Request
       - name: Create Docs PR
+        if: ${{ env.DOCS_REPO != '' }}
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.DOCS_REPO_TOKEN }}
+          token: ${{ env.DOCS_TOKEN }}
           path: docs-repo
 
           branch: automation/${{ github.event.repository.name }}-commit-docs

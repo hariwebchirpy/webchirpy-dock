@@ -2,6 +2,17 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+function toSafePathSegment(value, fallback = 'unknown-project') {
+  const normalized = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  return normalized || fallback;
+}
+
 /**
  * Script to automatically generate developer documentation from GitHub commits.
  * Triggered when a PR is merged into main.
@@ -83,12 +94,13 @@ async function generateCommitDocs() {
     }
 
     const repoName = process.env.PROJECT_NAME || detectedProject || path.basename(process.cwd());
+    const repoSlug = toSafePathSegment(repoName);
     const projectSource = process.env.PROJECT_NAME ? 'GitHub Secret (PROJECT_NAME)' : detectedProject ? 'Path Detection' : 'Default Directory Name';
     console.log(`Using project name: ${repoName} (Source: ${projectSource})`);
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey || !apiKey.startsWith('sk-or-')) {
       console.error('Error: Invalid or missing OPENROUTER_API_KEY. It should start with "sk-or-".');
-      return;
+      process.exit(1);
     }
 
     // 2. Send information to OpenRouter
@@ -214,14 +226,14 @@ List the major files involved.
         process.cwd(),
         "content",
         "projects",
-        repoName,
+        repoSlug,
         "changes"
       );
 
       // ensure directory exists
       fs.mkdirSync(outputDir, { recursive: true });
 
-      const fileName = `${date}-${repoName}-${shortHash}.md`;
+      const fileName = `${date}-${repoSlug}-${shortHash}.md`;
       const filePath = path.join(outputDir, fileName);
 
       fs.writeFileSync(filePath, markdownContent);

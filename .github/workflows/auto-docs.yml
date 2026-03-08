@@ -4,9 +4,7 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    types:
-      - closed
+      - master
 
 jobs:
   generate-commit-docs:

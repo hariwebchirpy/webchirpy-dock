@@ -23,7 +23,7 @@ Follow these steps to get the **WebChirpy Docs** documentation system up and run
 
 2.  **Install Dependencies**
     ```bash
-    bun install
+    bun i
     ```
 
 3.  **Start the Development Server**

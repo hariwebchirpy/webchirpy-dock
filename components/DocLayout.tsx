@@ -1,58 +1,50 @@
 import React from 'react';
 import Link from 'next/link';
-import { Search, Github, Twitter, Command } from 'lucide-react';
+import { Search, Github, Twitter, Command, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import SearchDialog from './SearchDialog';
 
 export default function DocLayout({ children }: { children: React.ReactNode }) {
 	return (
-		<div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/10">
+		<div className="min-h-screen bg-black text-white font-sans selection:bg-blue-500/20">
 			{/* Top Navigation Bar */}
-			<header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
-				<div className="container flex h-14 items-center gap-4 px-4 sm:px-8 max-w-(--breakpoint-2xl) mx-auto">
-					<div className="flex items-center gap-2 md:gap-6">
-						<Link href="/" className="flex items-center space-x-2">
-							<Command className="h-6 w-6" />
-							<span className="hidden font-bold sm:inline-block">
-								WebChirpy<span className="text-primary/60">Docs</span>
+			<header className="sticky top-0 z-50 w-full border-b border-zinc-800/50 bg-black/70 backdrop-blur-xl">
+				<div className="container flex h-14 items-center gap-4 px-4 sm:px-8 max-w-7xl mx-auto">
+					<div className="flex items-center gap-2 md:gap-8">
+						<Link href="/" className="flex items-center space-x-2.5">
+							<div className="p-1.5 rounded-lg bg-white/5 border border-white/10 group-hover:bg-white/10 transition-colors">
+								<Command className="h-5 w-5 text-white" />
+							</div>
+							<span className="hidden font-bold sm:inline-block tracking-tight">
+								WebChirpy<span className="text-zinc-500">Docs</span>
 							</span>
 						</Link>
 						<nav className="flex items-center space-x-6 text-sm font-medium">
-							<Link href="/projects" className="transition-colors hover:text-foreground/80 text-foreground">Projects</Link>
-							<Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60">Showcase</Link>
-							<Link href="#" className="transition-colors hover:text-foreground/80 text-foreground/60">Community</Link>
+							<Link href="/projects" className="transition-colors hover:text-white text-zinc-100">Projects</Link>
 						</nav>
 					</div>
 
 					<div className="flex flex-1 items-center justify-end space-x-4">
 						<div className="w-full flex-1 md:w-auto md:flex-initial">
-							<div className="relative group">
-								<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground transition-colors group-focus-within:text-foreground" />
-								<Input
-									type="search"
-									placeholder="Search documentation..."
-									className="pl-9 h-9 w-full md:w-[300px] lg:w-[400px] bg-muted/50 border-transparent hover:bg-muted/80 focus:bg-background transition-all"
-								/>
-								<kbd className="pointer-events-none absolute right-1.5 top-2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-									<span className="text-xs">⌘</span>K
-								</kbd>
-							</div>
+							<SearchDialog />
 						</div>
 						<nav className="flex items-center gap-1">
-							<Button variant="ghost" size="icon" className="h-9 w-9">
+							<Link
+								href="https://github.com/hariwebchirpy/webchirpy-dock"
+								target="_blank"
+								rel="noopener noreferrer"
+								className="h-9 w-9 inline-flex items-center justify-center rounded-md text-zinc-500 hover:text-white hover:bg-zinc-900 transition-colors"
+							>
 								<Github className="h-4 w-4" />
 								<span className="sr-only">GitHub</span>
-							</Button>
-							<Button variant="ghost" size="icon" className="h-9 w-9">
-								<Twitter className="h-4 w-4" />
-								<span className="sr-only">Twitter</span>
-							</Button>
+							</Link>
 						</nav>
 					</div>
 				</div>
 			</header>
 
-			<div className="max-w-(--breakpoint-2xl) mx-auto">
+			<div className="container mx-auto max-w-7xl">
 				{children}
 			</div>
 		</div>

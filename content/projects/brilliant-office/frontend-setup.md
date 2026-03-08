@@ -1,32 +1,45 @@
 ---
 title: Frontend Setup
-order: 2
+order: 3
+description: Guide to setting up the React/Vite frontend for development.
 ---
 
 # Frontend Setup
 
-The frontend is built with Next.js and Tailwind CSS.
+The Brilliant Office frontend is a high-performance React application powered by Vite and Shadcn UI.
 
-## Repository
+## Prerequisites
+- **Node.js**: v18+ 
+- **Package Manager**: Bun (recommended) or npm/pnpm.
 
-[https://github.com/webchirpy-new/ordering-frontend](https://github.com/webchirpy-new/ordering-frontend)
+## Installation Steps
+1. Navigate to the frontend directory:
+   ```bash
+   cd ordering-frontend
+   ```
+2. Install dependencies:
+   ```bash
+   bun install
+   ```
+3. Create a `.env` file based on `.env.example`:
+   ```bash
+   cp .env.example .env
+   ```
+4. Configure the API URL in your `.env`:
+   ```env
+   VITE_API_BASE_URL=http://localhost:8000
+   ```
 
-## Clone repo
+## Development Commands
+- **Start Dev Server**: `bun dev` (Runs on [http://localhost:5173](http://localhost:5173))
+- **Build for Production**: `bun run build`
+- **Linting**: `bun run lint`
+- **Formatting**: `bun run format` (Uses Prettier)
 
-```bash
-git clone https://github.com/webchirpy-new/ordering-frontend
-```
-
-## Install dependencies
-
-```bash
-npm install
-```
-
-## Run development server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) to see the result.
+## Core Technologies
+- **Styling**: Tailwind CSS
+- **Components**: Shadcn UI (Radix UI)
+- **Data Fetching**: @tanstack/react-query
+- **State Management**: Zustand
+- **Tables**: ag-grid-react
+- **Visualization**: chart.js

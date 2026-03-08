@@ -48,7 +48,6 @@ async function generateCommitDocs() {
     const commitMessage = execSync(`git log -1 ${commitHash} --pretty=format:"%B"`).toString().trim();
     const shortHash = commitHash.substring(0, 7);
     const date = new Date().toISOString().split('T')[0];
-    const repoName = process.env.PROJECT_NAME || path.basename(process.cwd());
 
     console.log(`Processing commit: ${shortHash} - ${commitMessage}`);
 
@@ -62,6 +61,20 @@ async function generateCommitDocs() {
       gitDiff = diffLines.slice(0, 5000).join('\n') + '\n\n... (diff truncated for length)';
     }
 
+    // Attempt to detect project from changed files (e.g., content/projects/XYZ/...)
+    let detectedProject = null;
+    const fileLines = changedFiles.split('\n');
+    for (const file of fileLines) {
+      const match = file.match(/^content\/projects\/([^/]+)\//);
+      if (match) {
+        detectedProject = match[1];
+        break;
+      }
+    }
+
+    const repoName = process.env.PROJECT_NAME || detectedProject || path.basename(process.cwd());
+    const projectSource = process.env.PROJECT_NAME ? 'GitHub Secret (PROJECT_NAME)' : detectedProject ? 'Path Detection' : 'Default Directory Name';
+    console.log(`Using project name: ${repoName} (Source: ${projectSource})`);
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey || !apiKey.startsWith('sk-or-')) {
       console.error('Error: Invalid or missing OPENROUTER_API_KEY. It should start with "sk-or-".');

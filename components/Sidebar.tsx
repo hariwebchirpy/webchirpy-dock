@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { ChevronRight, FileText, LayoutGrid, Layers, Settings2, Code2, Rocket, HelpCircle } from 'lucide-react';
+import { ChevronRight, FileText, LayoutGrid, Layers, Settings2, Code2, Rocket, HelpCircle, Clock } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SidebarProps {
@@ -52,6 +52,26 @@ export default function Sidebar({ projectName, projectSlug, docs }: SidebarProps
 							Navigation
 						</div>
 						<nav className="grid grid-flow-row auto-rows-max text-sm gap-0.5">
+							{/* Timeline Link */}
+							<Link
+								href={`/projects/${projectSlug}/changes`}
+								className={cn(
+									"group flex w-full items-center rounded-md px-3 py-2 transition-all",
+									pathname.startsWith(`/projects/${projectSlug}/changes`)
+										? "bg-white/5 text-white font-semibold"
+										: "text-zinc-500 hover:text-white"
+								)}
+							>
+								<Clock className={cn(
+									"mr-2.5 h-4 w-4 transition-colors",
+									pathname.startsWith(`/projects/${projectSlug}/changes`) ? "text-blue-500" : "text-zinc-500 group-hover:text-zinc-300"
+								)} />
+								Timeline
+								{pathname.startsWith(`/projects/${projectSlug}/changes`) && (
+									<div className="ml-auto w-1 h-4 bg-blue-500 rounded-full animate-in fade-in zoom-in-50 duration-300" />
+								)}
+							</Link>
+
 							{docs.map((doc) => {
 								const href = `/projects/${projectSlug}/${doc.slug}`;
 								const isActive = pathname === href;

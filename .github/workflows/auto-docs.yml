@@ -1,5 +1,8 @@
 name: Auto Generate Documentation
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
 
@@ -43,14 +46,16 @@ jobs:
         run: node scripts/generateCommitDocs.js
 
       - name: Checkout Docs Repo
+        if: ${{ secrets.DOCS_REPO != '' }}
         uses: actions/checkout@v4
         with:
           repository: ${{ secrets.DOCS_REPO }}
-          token: ${{ secrets.DOCS_REPO_TOKEN }}
+          token: ${{ secrets.DOCS_REPO_TOKEN || github.token }}
           path: docs-repo
           ref: main
 
       - name: Copy Generated Docs
+        if: ${{ secrets.DOCS_REPO != '' }}
         env:
           PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
         run: |
@@ -65,9 +70,10 @@ jobs:
           cp -R "content/projects/${SOURCE_PROJECT}/changes/." "docs-repo/content/projects/${SOURCE_PROJECT}/changes/"
 
       - name: Create Docs PR
+        if: ${{ secrets.DOCS_REPO != '' }}
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ secrets.DOCS_REPO_TOKEN }}
+          token: ${{ secrets.DOCS_REPO_TOKEN || github.token }}
           path: docs-repo
           commit-message: "docs: auto generate commit docs for ${{ github.repository }}"
           title: "docs: update commit docs for ${{ github.repository }}"

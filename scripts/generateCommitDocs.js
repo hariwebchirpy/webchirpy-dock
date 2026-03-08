@@ -210,7 +210,6 @@ List the major files involved.
 
       console.log('\nGeneration complete.');
 
-      const fileName = `${date}-${repoName}-${shortHash}.md`;
       const outputDir = path.join(
         process.cwd(),
         "content",
@@ -219,12 +218,15 @@ List the major files involved.
         "changes"
       );
 
-      // create folder if missing
+      // ensure directory exists
       fs.mkdirSync(outputDir, { recursive: true });
 
+      const fileName = `${date}-${repoName}-${shortHash}.md`;
       const filePath = path.join(outputDir, fileName);
 
       fs.writeFileSync(filePath, markdownContent);
+
+      console.log(`Saved documentation to: ${filePath}`);
       console.log(`Successfully generated documentation: ${filePath}`);
     }
 

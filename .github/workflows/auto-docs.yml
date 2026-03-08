@@ -25,7 +25,7 @@ jobs:
 
     env:
       DOCS_REPO: ${{ secrets.DOCS_REPO }}
-      DOCS_REPO_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
+      DOCS_TOKEN: ${{ secrets.DOCS_REPO_TOKEN || github.token }}
 
     steps:
       - name: Checkout Source Repo
@@ -54,7 +54,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.DOCS_REPO }}
-          token: ${{ env.DOCS_REPO_TOKEN != '' && env.DOCS_REPO_TOKEN || github.token }}
+          token: ${{ env.DOCS_TOKEN }}
           path: docs-repo
           ref: main
 
@@ -77,7 +77,7 @@ jobs:
         if: ${{ env.DOCS_REPO != '' }}
         uses: peter-evans/create-pull-request@v6
         with:
-          token: ${{ env.DOCS_REPO_TOKEN != '' && env.DOCS_REPO_TOKEN || github.token }}
+          token: ${{ env.DOCS_TOKEN }}
           path: docs-repo
           commit-message: "docs: auto generate commit docs for ${{ github.repository }}"
           title: "docs: update commit docs for ${{ github.repository }}"

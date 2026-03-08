@@ -46,18 +46,46 @@ jobs:
             cp content/projects/${PROJECT_NAME}/changes/*.md docs-repo/content/projects/${PROJECT_NAME}/changes/
           fi
 
-      - name: Commit and Push to Documentation Repository
+      - name: Commit Changes to Documentation Branch
         env:
+          DOCS_REPO: ${{ secrets.DOCS_REPO }}
           DOCS_REPO_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
         run: |
           cd docs-repo
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          DOCS_BRANCH="auto/docs-${GITHUB_RUN_ID}"
+          git checkout -b "${DOCS_BRANCH}"
 
           git add .
           if git diff --staged --quiet; then
             echo "No new documentation to commit."
           else
             git commit -m "docs: auto-generate commit documentation for ${GITHUB_REPOSITORY}"
-            git push origin main
+            git push --set-upstream origin "${DOCS_BRANCH}"
+            echo "DOCS_BRANCH=${DOCS_BRANCH}" >> "$GITHUB_ENV"
           fi
+
+      - name: Open Pull Request in Documentation Repository
+        if: env.DOCS_BRANCH != ''
+        env:
+          DOCS_REPO: ${{ secrets.DOCS_REPO }}
+          GH_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
+        run: |
+          PR_TITLE="docs(auto): sync ${GITHUB_REPOSITORY} @ ${GITHUB_SHA}"
+          PR_BODY=$(cat <<EOF
+          Automated documentation update.
+
+          Source repository: ${GITHUB_REPOSITORY}
+          Source commit: ${GITHUB_SHA}
+          Workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+          EOF
+          )
+
+          gh pr create \
+            --repo "${DOCS_REPO}" \
+            --base main \
+            --head "${DOCS_BRANCH}" \
+            --title "${PR_TITLE}" \
+            --body "${PR_BODY}"

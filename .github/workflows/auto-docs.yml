@@ -31,7 +31,9 @@ jobs:
       - name: Run Commit Documentation Generator
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-          PROJECT_NAME: ${{ secrets.PROJECT_NAME != '' && secrets.PROJECT_NAME || github.event.repository.name }}
+          PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
+          GITHUB_EVENT_BEFORE: ${{ github.event.before }}
+          GITHUB_EVENT_AFTER: ${{ github.event.after }}
         run: node scripts/generateCommitDocs.js
 
       - name: Checkout Documentation Repository

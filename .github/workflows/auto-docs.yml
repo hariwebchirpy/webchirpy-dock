@@ -14,17 +14,17 @@ on:
   workflow_dispatch:
     inputs:
       backfill_pr_timelines:
-        description: 'Generate PR discussion timelines for past merged PRs'
+        description: "Generate PR discussion timelines for past merged PRs"
         required: false
-        default: 'false'
+        default: "false"
       pr_merged_since:
-        description: 'Only include merged PRs at/after this ISO date (e.g. 2025-01-01T00:00:00Z)'
+        description: "Only include merged PRs at/after this ISO date (e.g. 2025-01-01T00:00:00Z)"
         required: false
-        default: ''
+        default: ""
       max_prs:
-        description: 'Optional max number of merged PRs to process (newest first)'
+        description: "Optional max number of merged PRs to process (newest first)"
         required: false
-        default: '0'
+        default: "0"
 
 jobs:
   generate-commit-docs:
@@ -40,8 +40,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install Dependencies
         run: npm install
@@ -68,7 +68,7 @@ jobs:
         run: |
           mkdir -p docs-repo/content/projects/${PROJECT_NAME}/changes/
           if [ -d "content/projects/${PROJECT_NAME}/changes/" ]; then
-            find content/projects/${PROJECT_NAME}/changes -maxdepth 1 -name "*.md" -type f -exec cp {} docs-repo/content/projects/${PROJECT_NAME}/changes/ \;
+            cp -R content/projects/${PROJECT_NAME}/changes/* docs-repo/content/projects/${PROJECT_NAME}/changes/
           fi
 
       - name: Open or Update Docs PR (Commit Docs)
@@ -97,7 +97,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm install
 
       - name: Generate PR Discussion Timeline
         env:
@@ -121,7 +125,7 @@ jobs:
         run: |
           mkdir -p docs-repo/content/projects/${PROJECT_NAME}/changes/pr-discussions/
           if [ -d "content/projects/${PROJECT_NAME}/changes/pr-discussions/" ]; then
-            find content/projects/${PROJECT_NAME}/changes/pr-discussions -maxdepth 1 -name "*.md" -type f -exec cp {} docs-repo/content/projects/${PROJECT_NAME}/changes/pr-discussions/ \;
+            cp -R content/projects/${PROJECT_NAME}/changes/pr-discussions/* docs-repo/content/projects/${PROJECT_NAME}/changes/pr-discussions/
           fi
 
       - name: Open or Update Docs PR (PR Discussion Timeline)
@@ -151,7 +155,11 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm install
 
       - name: Generate PR Discussion Timelines for Past Merges
         env:
@@ -176,7 +184,7 @@ jobs:
         run: |
           mkdir -p docs-repo/content/projects/${PROJECT_NAME}/changes/pr-discussions/
           if [ -d "content/projects/${PROJECT_NAME}/changes/pr-discussions/" ]; then
-            find content/projects/${PROJECT_NAME}/changes/pr-discussions -maxdepth 1 -name "*.md" -type f -exec cp {} docs-repo/content/projects/${PROJECT_NAME}/changes/pr-discussions/ \;
+            cp -R content/projects/${PROJECT_NAME}/changes/pr-discussions/* docs-repo/content/projects/${PROJECT_NAME}/changes/pr-discussions/
           fi
 
       - name: Open or Update Docs PR (Past PR Discussion Timelines)

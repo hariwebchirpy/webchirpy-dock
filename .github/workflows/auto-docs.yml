@@ -26,7 +26,7 @@ jobs:
 
       - name: Run Documentation Generator
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
         run: node scripts/generateCommitDocs.js
 
@@ -42,8 +42,8 @@ jobs:
           PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
         run: |
           mkdir -p docs-repo/content/projects/${PROJECT_NAME}/changes/
-          if [ -d "temp_docs" ]; then
-            cp temp_docs/*.md docs-repo/content/projects/${PROJECT_NAME}/changes/
+          if [ -d "content/projects/${PROJECT_NAME}/changes/" ]; then
+            cp content/projects/${PROJECT_NAME}/changes/*.md docs-repo/content/projects/${PROJECT_NAME}/changes/
           fi
 
       - name: Commit and Push to Documentation Repository

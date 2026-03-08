@@ -57,19 +57,41 @@ jobs:
       - name: Copy Generated Docs
         if: ${{ env.DOCS_REPO != '' }}
         run: |
-          SOURCE_PROJECT="${PROJECT_NAME:-${GITHUB_REPOSITORY##*/}}"
+          SOURCE_PROJECT="$(printf '%s' "${PROJECT_NAME:-${GITHUB_REPOSITORY##*/}}" | tr -d '\r' | xargs)"
 
-          echo "Project name: $SOURCE_PROJECT"
+          echo "Configured project name: $SOURCE_PROJECT"
 
-          if [ ! -d "content/projects/$SOURCE_PROJECT/changes" ]; then
-            echo "No generated documentation found"
+          copy_project_changes() {
+            local project="$1"
+
+            if [ ! -d "content/projects/$project/changes" ]; then
+              return 1
+            fi
+
+            mkdir -p "docs-repo/content/projects/$project/changes"
+            cp -R "content/projects/$project/changes/." \
+                  "docs-repo/content/projects/$project/changes/"
+            echo "Copied changes for project: $project"
+            return 0
+          }
+
+          if copy_project_changes "$SOURCE_PROJECT"; then
             exit 0
           fi
 
-          mkdir -p docs-repo/content/projects/$SOURCE_PROJECT/changes
+          echo "Configured project directory not found. Falling back to copying all available project change folders."
 
-          cp -R content/projects/$SOURCE_PROJECT/changes/. \
-                docs-repo/content/projects/$SOURCE_PROJECT/changes/
+          copied_any=false
+          for changes_dir in content/projects/*/changes; do
+            [ -d "$changes_dir" ] || continue
+            project_name="$(basename "$(dirname "$changes_dir")")"
+            copy_project_changes "$project_name" || true
+            copied_any=true
+          done
+
+          if [ "$copied_any" = false ]; then
+            echo "No generated documentation found"
+          fi
 
       # 7. Debug step (helps when something breaks)
       - name: Debug docs repo state

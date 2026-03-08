@@ -43,8 +43,15 @@ jobs:
         env:
           PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
         run: |
-          mkdir -p docs-repo/content/projects/${PROJECT_NAME}/changes/
-          cp -R content/projects/${PROJECT_NAME}/changes/* docs-repo/content/projects/${PROJECT_NAME}/changes/ || true
+          SOURCE_PROJECT="${PROJECT_NAME:-${GITHUB_REPOSITORY##*/}}"
+
+          if [ ! -d "content/projects/${SOURCE_PROJECT}/changes" ]; then
+            echo "No generated docs found at content/projects/${SOURCE_PROJECT}/changes"
+            exit 1
+          fi
+
+          mkdir -p "docs-repo/content/projects/${SOURCE_PROJECT}/changes/"
+          cp -R "content/projects/${SOURCE_PROJECT}/changes/." "docs-repo/content/projects/${SOURCE_PROJECT}/changes/"
 
       - name: Create Docs PR
         uses: peter-evans/create-pull-request@v6

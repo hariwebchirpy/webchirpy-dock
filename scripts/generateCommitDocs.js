@@ -88,7 +88,7 @@ async function generateCommitDocs() {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey || !apiKey.startsWith('sk-or-')) {
       console.error('Error: Invalid or missing OPENROUTER_API_KEY. It should start with "sk-or-".');
-      return;
+      process.exit(1);
     }
 
     // 2. Send information to OpenRouter

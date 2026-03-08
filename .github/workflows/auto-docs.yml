@@ -51,6 +51,10 @@ jobs:
             find content/projects/${PROJECT_NAME}/changes -maxdepth 1 -name "*.md" -type f -exec cp {} docs-repo/content/projects/${PROJECT_NAME}/changes/ \;
           fi
 
+      - name: Commit Changes to Documentation Branch
+        env:
+          DOCS_REPO: ${{ secrets.DOCS_REPO }}
+          DOCS_REPO_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
       - name: Open or Update Docs PR (Commit Docs)
         uses: peter-evans/create-pull-request@v6
         with:

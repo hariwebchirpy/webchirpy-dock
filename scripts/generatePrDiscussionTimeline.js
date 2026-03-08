@@ -32,7 +32,10 @@ async function main() {
 
   const { owner, repo } = getRepoParts();
 
-  const projectName = process.env.PROJECT_NAME || repo;
+  let projectName = process.env.PROJECT_NAME || repo;
+  
+  // Strip -changes-* suffix if present (e.g., myproject-changes-frontend -> myproject)
+  projectName = projectName.replace(/-changes-.*$/, '');
 
   const outputPath = await generateTimelineForPr({
     owner,

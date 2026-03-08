@@ -29,7 +29,10 @@ async function main() {
 
   const { owner, repo } = getRepoParts();
 
-  const projectName = process.env.PROJECT_NAME || repo;
+  let projectName = process.env.PROJECT_NAME || repo;
+  
+  // Strip -changes-* suffix if present
+  projectName = projectName.replace(/-changes-.*$/, '');
 
   const since = process.env.PR_MERGED_SINCE || "";
   const maxPrs = Number(process.env.MAX_PRS || "0");

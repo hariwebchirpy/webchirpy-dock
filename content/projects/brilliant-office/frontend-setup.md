@@ -19,7 +19,7 @@ The Brilliant Office frontend is a high-performance React application powered by
    ```
 2. Install dependencies:
    ```bash
-   bun install
+   bun i
    ```
 3. Create a `.env` file based on `.env.example`:
    ```bash

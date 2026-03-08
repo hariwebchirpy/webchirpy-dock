@@ -9,15 +9,11 @@ jobs:
   generate-docs:
     runs-on: ubuntu-latest
 
-    # Permissions required to push changes back to the repository
-    permissions:
-      contents: write
-
     steps:
-      - name: Checkout Code
+      - name: Checkout Source Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2 # Essential to compare with previous commit for diff
+          fetch-depth: 0 # Fetch all history to correctly identify merge commits
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -29,24 +25,39 @@ jobs:
         run: npm install
 
       - name: Run Documentation Generator
-        # Secrets should be configured in the GitHub repository settings
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
         run: node scripts/generateCommitDocs.js
 
-      - name: Commit and Push Changes
+      - name: Clone Documentation Repository
+        env:
+          DOCS_REPO: ${{ secrets.DOCS_REPO }}
+          DOCS_REPO_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
         run: |
+          git clone https://x-access-token:${DOCS_REPO_TOKEN}@github.com/${DOCS_REPO}.git docs-repo
+
+      - name: Move Generated Documentation
+        env:
+          PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
+        run: |
+          mkdir -p docs-repo/content/projects/${PROJECT_NAME}/changes/
+          if [ -d "temp_docs" ]; then
+            cp temp_docs/*.md docs-repo/content/projects/${PROJECT_NAME}/changes/
+          fi
+
+      - name: Commit and Push to Documentation Repository
+        env:
+          DOCS_REPO_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
+        run: |
+          cd docs-repo
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Stage ONLY the generated documentation files
-          git add content/projects/brilliant-office/changes/*.md || true
-
-          # Check if there are changes to commit
+          git add .
           if git diff --staged --quiet; then
-            echo "No new documentation files were created."
+            echo "No new documentation to commit."
           else
-            # We use 'chore:' prefix which is ignored by the script to prevent infinite loops
-            git commit -m "chore: auto-generate commit documentation [skip ci]"
-            git push
+            git commit -m "docs: auto-generate commit documentation for ${GITHUB_REPOSITORY}"
+            git push origin main
           fi

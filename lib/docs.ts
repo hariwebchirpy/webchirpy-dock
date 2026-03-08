@@ -106,3 +106,63 @@ export async function getDocContent(projectSlug: string, docSlug: string): Promi
 		content,
 	};
 }
+
+export async function getProjectChanges(projectSlug: string): Promise<DocListItem[]> {
+	const changesPath = path.join(contentDirectory, projectSlug, 'changes');
+	if (!fs.existsSync(changesPath)) return [];
+
+	const getAllFiles = (dirPath: string, arrayOfFiles: string[] = []) => {
+		const files = fs.readdirSync(dirPath);
+
+		files.forEach((file) => {
+			const fullPath = path.join(dirPath, file);
+			if (fs.statSync(fullPath).isDirectory()) {
+				getAllFiles(fullPath, arrayOfFiles);
+			} else if (file.endsWith('.md')) {
+				arrayOfFiles.push(fullPath);
+			}
+		});
+
+		return arrayOfFiles;
+	};
+
+	const files = getAllFiles(changesPath);
+
+	const changes = files.map(fullPath => {
+		const relativePath = path.relative(changesPath, fullPath);
+		const slug = relativePath.replace(/\\/g, '/').replace(/\.md$/, '');
+		const parts = slug.split('/');
+		const category = parts.length > 1 ? parts[0] : undefined;
+
+		const fileContents = fs.readFileSync(fullPath, 'utf8');
+		const { data } = matter(fileContents);
+
+		return {
+			slug,
+			title: data.title || parts[parts.length - 1],
+			order: data.date ? -new Date(data.date).getTime() : 0, // Sort by date descending
+			date: data.date,
+			commit: data.commit,
+			repo: data.repo,
+			category: category ? category.charAt(0).toUpperCase() + category.slice(1) : undefined,
+		};
+	});
+
+	return changes.sort((a, b) => a.order - b.order);
+}
+
+export async function getChangeContent(projectSlug: string, changeSlug: string | string[]): Promise<DocContent | null> {
+	const slugPath = Array.isArray(changeSlug) ? changeSlug.join('/') : changeSlug;
+	const fullPath = path.join(contentDirectory, projectSlug, 'changes', `${slugPath}.md`);
+
+	if (!fs.existsSync(fullPath)) return null;
+
+	const fileContents = fs.readFileSync(fullPath, 'utf8');
+	const { data, content } = matter(fileContents);
+
+	return {
+		slug: slugPath,
+		metadata: data as DocMetadata,
+		content,
+	};
+}

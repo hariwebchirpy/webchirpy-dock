@@ -73,6 +73,8 @@ async function generateCommitDocs() {
     }
 
     const repoName = process.env.PROJECT_NAME || detectedProject || path.basename(process.cwd());
+    const projectSource = process.env.PROJECT_NAME ? 'GitHub Secret (PROJECT_NAME)' : detectedProject ? 'Path Detection' : 'Default Directory Name';
+    console.log(`Using project name: ${repoName} (Source: ${projectSource})`);
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey || !apiKey.startsWith('sk-or-')) {
       console.error('Error: Invalid or missing OPENROUTER_API_KEY. It should start with "sk-or-".');

@@ -5,6 +5,26 @@ on:
     branches:
       - main
       - master
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+    inputs:
+      backfill_pr_timelines:
+        description: 'Generate PR discussion timelines for past merged PRs'
+        required: false
+        default: 'false'
+      pr_merged_since:
+        description: 'Only include merged PRs at/after this ISO date (e.g. 2025-01-01T00:00:00Z)'
+        required: false
+        default: ''
+      max_prs:
+        description: 'Optional max number of merged PRs to process (newest first)'
+        required: false
+        default: '0'
 
 jobs:
   generate-commit-docs:
@@ -51,17 +71,13 @@ jobs:
             find content/projects/${PROJECT_NAME}/changes -maxdepth 1 -name "*.md" -type f -exec cp {} docs-repo/content/projects/${PROJECT_NAME}/changes/ \;
           fi
 
-      - name: Commit Changes to Documentation Branch
-        env:
-          DOCS_REPO: ${{ secrets.DOCS_REPO }}
-          DOCS_REPO_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
       - name: Open or Update Docs PR (Commit Docs)
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.DOCS_REPO_TOKEN }}
           path: docs-repo
-          commit-message: docs: auto-generate commit documentation for ${{ github.repository }}
-          title: docs: sync commit documentation for ${{ github.repository }}
+          commit-message: "docs: auto-generate commit documentation for ${{ github.repository }}"
+          title: "docs: sync commit documentation for ${{ github.repository }}"
           body: |
             ## Summary
             - Syncs auto-generated commit documentation from `${{ github.repository }}`.
@@ -113,13 +129,68 @@ jobs:
         with:
           token: ${{ secrets.DOCS_REPO_TOKEN }}
           path: docs-repo
-          commit-message: docs: add PR discussion timeline for ${{ github.repository }}#${{ github.event.pull_request.number }}
-          title: docs: sync PR discussion timeline for ${{ github.repository }}#${{ github.event.pull_request.number }}
+          commit-message: "docs: add PR discussion timeline for ${{ github.repository }}#${{ github.event.pull_request.number }}"
+          title: "docs: sync PR discussion timeline for ${{ github.repository }}#${{ github.event.pull_request.number }}"
           body: |
             ## Summary
             - Adds/updates PR discussion timeline docs for merged PR `${{ github.repository }}#${{ github.event.pull_request.number }}`.
             - Includes issue comments, review comments, and review summaries in chronological order.
             - Source workflow run: `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`.
           branch: automation/${{ github.event.repository.name }}-pr-discussions
+          base: main
+          delete-branch: false
+
+  generate-pr-discussion-docs-backfill:
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.backfill_pr_timelines == 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate PR Discussion Timelines for Past Merges
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PROJECT_NAME: ${{ secrets.PROJECT_NAME != '' && secrets.PROJECT_NAME || github.event.repository.name }}
+          PR_MERGED_SINCE: ${{ github.event.inputs.pr_merged_since }}
+          MAX_PRS: ${{ github.event.inputs.max_prs }}
+        run: node scripts/generatePastMergedPrDiscussionTimelines.js
+
+      - name: Checkout Documentation Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ secrets.DOCS_REPO }}
+          token: ${{ secrets.DOCS_REPO_TOKEN }}
+          path: docs-repo
+          ref: main
+
+      - name: Copy PR Discussion Timelines into Docs Repository
+        env:
+          PROJECT_NAME: ${{ secrets.PROJECT_NAME != '' && secrets.PROJECT_NAME || github.event.repository.name }}
+        run: |
+          mkdir -p docs-repo/content/projects/${PROJECT_NAME}/changes/pr-discussions/
+          if [ -d "content/projects/${PROJECT_NAME}/changes/pr-discussions/" ]; then
+            find content/projects/${PROJECT_NAME}/changes/pr-discussions -maxdepth 1 -name "*.md" -type f -exec cp {} docs-repo/content/projects/${PROJECT_NAME}/changes/pr-discussions/ \;
+          fi
+
+      - name: Open or Update Docs PR (Past PR Discussion Timelines)
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.DOCS_REPO_TOKEN }}
+          path: docs-repo
+          commit-message: "docs: backfill PR discussion timelines for ${{ github.repository }}"
+          title: "docs: backfill PR discussion timelines for ${{ github.repository }}"
+          body: |
+            ## Summary
+            - Backfills PR discussion timeline docs for past merged PRs in `${{ github.repository }}`.
+            - Includes issue comments, review comments, and review summaries in chronological order.
+            - Source workflow run: `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`.
+          branch: automation/${{ github.event.repository.name }}-pr-discussions-backfill
           base: main
           delete-branch: false

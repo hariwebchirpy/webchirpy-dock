@@ -1,31 +1,37 @@
-const { generateTimelineForPr } = require('./lib/prDiscussionTimeline');
+const { generateTimelineForPr } = require("../lib/prDiscussionTimeline");
 
-const REQUIRED_ENV_VARS = ['GITHUB_TOKEN', 'GITHUB_REPOSITORY', 'PR_NUMBER'];
+const REQUIRED_ENV_VARS = [
+  "GITHUB_TOKEN",
+  "GITHUB_REPOSITORY",
+  "PR_NUMBER"
+];
 
 function ensureEnv() {
-  const missing = REQUIRED_ENV_VARS.filter((name) => !process.env[name]);
+  const missing = REQUIRED_ENV_VARS.filter(v => !process.env[v]);
   if (missing.length > 0) {
-    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+    throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
   }
 }
 
 function getRepoParts() {
-  const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
+  const [owner, repo] = process.env.GITHUB_REPOSITORY.split("/");
   if (!owner || !repo) {
-    throw new Error(`Invalid GITHUB_REPOSITORY value: ${process.env.GITHUB_REPOSITORY}`);
+    throw new Error(`Invalid GITHUB_REPOSITORY: ${process.env.GITHUB_REPOSITORY}`);
   }
   return { owner, repo };
 }
 
-async function generateTimeline() {
+async function main() {
   ensureEnv();
 
   const prNumber = Number(process.env.PR_NUMBER);
-  if (!Number.isInteger(prNumber) || prNumber <= 0) {
+
+  if (!Number.isInteger(prNumber)) {
     throw new Error(`Invalid PR_NUMBER: ${process.env.PR_NUMBER}`);
   }
 
   const { owner, repo } = getRepoParts();
+
   const projectName = process.env.PROJECT_NAME || repo;
 
   const outputPath = await generateTimelineForPr({
@@ -36,10 +42,10 @@ async function generateTimeline() {
     projectName
   });
 
-  console.log(`Generated PR discussion timeline at: ${outputPath}`);
+  console.log(`Generated timeline: ${outputPath}`);
 }
 
-generateTimeline().catch((error) => {
-  console.error(error.message);
+main().catch(err => {
+  console.error(err.message);
   process.exit(1);
 });

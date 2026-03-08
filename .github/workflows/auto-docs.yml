@@ -5,24 +5,32 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   generate-docs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout source repo
       - name: Checkout Source Repo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # 2. Setup Node
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: "20"
 
+      # 3. Install dependencies
       - name: Install dependencies
         run: npm install
 
+      # 4. Generate commit docs
       - name: Generate Commit Documentation
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
@@ -31,6 +39,7 @@ jobs:
           GITHUB_EVENT_AFTER: ${{ github.event.after }}
         run: node scripts/generateCommitDocs.js
 
+      # 5. Checkout documentation repository
       - name: Checkout Docs Repo
         uses: actions/checkout@v4
         with:
@@ -39,25 +48,53 @@ jobs:
           path: docs-repo
           ref: main
 
+      # 6. Copy generated docs
       - name: Copy Generated Docs
         env:
           PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
         run: |
-          mkdir -p docs-repo/content/projects/${PROJECT_NAME}/changes/
-          cp -R content/projects/${PROJECT_NAME}/changes/* docs-repo/content/projects/${PROJECT_NAME}/changes/ || true
+          SOURCE_PROJECT="${PROJECT_NAME:-${GITHUB_REPOSITORY##*/}}"
 
+          echo "Project name: $SOURCE_PROJECT"
+
+          if [ ! -d "content/projects/$SOURCE_PROJECT/changes" ]; then
+            echo "No generated documentation found"
+            exit 0
+          fi
+
+          mkdir -p docs-repo/content/projects/$SOURCE_PROJECT/changes
+
+          cp -R content/projects/$SOURCE_PROJECT/changes/. \
+                docs-repo/content/projects/$SOURCE_PROJECT/changes/
+
+      # 7. Debug step (helps when something breaks)
+      - name: Debug docs repo state
+        run: |
+          echo "Generated files:"
+          ls -R content/projects || true
+
+          echo "Docs repo files:"
+          ls -R docs-repo || true
+
+          cd docs-repo
+          git status
+
+      # 8. Create Pull Request
       - name: Create Docs PR
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.DOCS_REPO_TOKEN }}
           path: docs-repo
+
+          branch: automation/${{ github.event.repository.name }}-commit-docs
+          base: main
+
           commit-message: "docs: auto generate commit docs for ${{ github.repository }}"
+
           title: "docs: update commit docs for ${{ github.repository }}"
+
           body: |
             Automated documentation generated from repository commits.
 
             Source repo: ${{ github.repository }}
             Workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-          branch: automation/${{ github.event.repository.name }}-commit-docs
-          base: main

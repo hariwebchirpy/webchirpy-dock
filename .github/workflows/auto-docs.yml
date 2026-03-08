@@ -16,6 +16,7 @@ jobs:
     env:
       DOCS_REPO: ${{ secrets.DOCS_REPO }}
       DOCS_TOKEN: ${{ secrets.DOCS_REPO_TOKEN }}
+      PROJECT_NAME: ${{ secrets.PROJECT_NAME }}
 
     steps:
       # 1. Checkout source repo

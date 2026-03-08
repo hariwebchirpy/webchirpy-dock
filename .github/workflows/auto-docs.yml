@@ -58,10 +58,16 @@ jobs:
         run: |
           # Extract base project and category from patterns like 'myproject-changes-frontend'
           RAW_PROJECT="${PROJECT_NAME:-${GITHUB_REPOSITORY##*/}}"
-          SOURCE_PROJECT=$(echo "$RAW_PROJECT" | sed -E 's/-changes-.*//')
 
-          # If it had a category suffix, determine it, otherwise sync all
-          CATEGORY=$(echo "$RAW_PROJECT" | grep -oE '-changes-.*$' | sed 's/^-changes-//' || echo "")
+          # Use bash parameter expansion to strip suffix and prefix
+          SOURCE_PROJECT="${RAW_PROJECT%%-changes-*}"
+
+          # Check if RAW_PROJECT actually contains '-changes-'
+          if [[ "$RAW_PROJECT" == *"-changes-"* ]]; then
+            CATEGORY="${RAW_PROJECT##*-changes-}"
+          else
+            CATEGORY=""
+          fi
 
           echo "Base Project string: $SOURCE_PROJECT"
           echo "Category: $CATEGORY"

@@ -111,7 +111,7 @@ export default function Sidebar({ projectName, projectSlug, docs }: SidebarProps
 							<Link href="https://github.com/hariwebchirpy/webchirpy-dock" target="_blank" className="flex w-full items-center py-1.5 text-zinc-500 hover:text-white transition-colors">
 								GitHub Repository
 							</Link>
-							<Link href="/projects/webchirpy-docs/overview" className="flex w-full items-center py-1.5 text-zinc-500 hover:text-white transition-colors">
+							<Link href="/projects/webchirpy-dock/overview" className="flex w-full items-center py-1.5 text-zinc-500 hover:text-white transition-colors">
 								Documentation Guide
 							</Link>
 						</nav>

@@ -91,7 +91,7 @@ export default async function DocPage({ params }: PageProps) {
 								)}
 							</div>
 
-							<MarkdownRenderer content={docData.content} />
+							<MarkdownRenderer content={docData.content} projectSlug={project} />
 
 							<Separator className="my-24 bg-zinc-900" />
 

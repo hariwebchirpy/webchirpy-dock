@@ -4,6 +4,7 @@ import { Search, Github, Twitter, Command, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import SearchDialog from './SearchDialog';
+import Image from 'next/image';
 
 export default function DocLayout({ children }: { children: React.ReactNode }) {
 	return (
@@ -14,10 +15,11 @@ export default function DocLayout({ children }: { children: React.ReactNode }) {
 					<div className="flex items-center gap-2 md:gap-8">
 						<Link href="/" className="flex items-center space-x-2.5">
 							<div className="p-1.5 rounded-lg bg-white/5 border border-white/10 group-hover:bg-white/10 transition-colors">
-								<Command className="h-5 w-5 text-white" />
+								{/* <Command className="h-5 w-5 text-white" /> */}
+								<Image src="/logo.png" alt="Logo" width={24} height={24} />
 							</div>
 							<span className="hidden font-bold sm:inline-block tracking-tight">
-								WebChirpy<span className="text-zinc-500">Docs</span>
+								<span className="text-zinc-500">WebChirpy</span>
 							</span>
 						</Link>
 						<nav className="flex items-center space-x-6 text-sm font-medium">

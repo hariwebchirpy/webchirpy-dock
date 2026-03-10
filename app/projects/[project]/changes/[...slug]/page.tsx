@@ -97,7 +97,7 @@ export default async function ChangePage({ params }: ChangePageProps) {
 								)}
 							</div>
 
-							<MarkdownRenderer content={changeData.content} />
+							<MarkdownRenderer content={changeData.content} projectSlug={project} isChangeDoc={true} />
 
 							<Separator className="my-24 bg-zinc-900" />
 

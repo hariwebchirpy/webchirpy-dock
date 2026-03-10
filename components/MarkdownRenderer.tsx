@@ -3,12 +3,15 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
+import Link from 'next/link';
 
 interface MarkdownRendererProps {
   content: string;
+  projectSlug?: string;
+  isChangeDoc?: boolean;
 }
 
-export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
+export default function MarkdownRenderer({ content, projectSlug, isChangeDoc }: MarkdownRendererProps) {
   return (
     <div className="prose prose-zinc dark:prose-invert max-w-none 
       prose-headings:scroll-mt-20
@@ -43,6 +46,29 @@ export default function MarkdownRenderer({ content }: MarkdownRendererProps) {
               .replace(/[^\w\s-]/g, '')
               .replace(/\s+/g, '-');
             return <h3 id={id} {...props} />;
+          },
+          a: ({ node, href, ...props }) => {
+            if (href && projectSlug && (href.endsWith('.md') || !href.includes(':'))) {
+              // Transform relative markdown links
+              let targetHref = href.replace(/\.md$/, '');
+
+              // If it's a relative link within a project
+              if (!targetHref.startsWith('/') && !targetHref.startsWith('http')) {
+                if (isChangeDoc) {
+                  // For change docs, relative links might be trickier, but usually they point back to general docs or other changes
+                  targetHref = `/projects/${projectSlug}/changes/${targetHref}`;
+                } else {
+                  targetHref = `/projects/${projectSlug}/${targetHref}`;
+                }
+              }
+
+              return (
+                <Link href={targetHref} {...props} className="text-blue-500 font-medium underline-offset-4 hover:underline transition-colors">
+                  {props.children}
+                </Link>
+              );
+            }
+            return <a href={href} {...props} target={href?.startsWith('http') ? '_blank' : undefined} rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined} />;
           }
         }}
       >

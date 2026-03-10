@@ -41,9 +41,13 @@ export default async function ChangePage({ params }: ChangePageProps) {
 					<AnimatedContent>
 						<div className="mx-auto w-full min-w-0 px-4 md:px-0">
 							<div className="mb-6 flex items-center space-x-1.5 text-[13px] text-zinc-500 font-medium">
-								<div className="hover:text-zinc-300 transition-colors cursor-pointer text-white">
+								<Link href="/projects" className="hover:text-zinc-300 transition-colors cursor-pointer">
+									Projects
+								</Link>
+								<ChevronRight className="h-3.5 w-3.5 opacity-50" />
+								<Link href={`/projects/${project}`} className="hover:text-zinc-300 transition-colors cursor-pointer text-white">
 									{projectName}
-								</div>
+								</Link>
 								<ChevronRight className="h-3.5 w-3.5 opacity-50" />
 								<Link href={`/projects/${project}/changes`} className="hover:text-zinc-300 transition-colors cursor-pointer">
 									Timeline
@@ -51,9 +55,9 @@ export default async function ChangePage({ params }: ChangePageProps) {
 								{category && (
 									<>
 										<ChevronRight className="h-3.5 w-3.5 opacity-50" />
-										<div className="hover:text-zinc-300 transition-colors cursor-pointer">
+										<Link href={`/projects/${project}/changes?category=${category.toLowerCase()}`} className="hover:text-zinc-300 transition-colors cursor-pointer">
 											{category}
-										</div>
+										</Link>
 									</>
 								)}
 								<ChevronRight className="h-3.5 w-3.5 opacity-50" />
@@ -96,6 +100,33 @@ export default async function ChangePage({ params }: ChangePageProps) {
 							<MarkdownRenderer content={changeData.content} />
 
 							<Separator className="my-24 bg-zinc-900" />
+
+							<div className="flex flex-col gap-10 mb-24">
+								<div className="flex flex-col gap-3">
+									<h3 className="font-bold text-xl tracking-tight text-white">Technical Reference</h3>
+									<p className="text-zinc-500 text-[15px] leading-relaxed max-w-md">This documentation was automatically generated from a code commit. You can view the full technical details on GitHub.</p>
+								</div>
+								<div className="flex flex-wrap gap-4">
+									<Link
+										href={`https://github.com/hariwebchirpy/webchirpy-dock/blob/main/content/projects/${project}/changes/${slug.join('/')}.md`}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="bg-white text-black hover:bg-zinc-200 font-bold rounded-xl px-6 h-11 inline-flex items-center justify-center transition-colors"
+									>
+										<Github className="mr-2 h-4 w-4" /> View Source
+									</Link>
+									{changeData.metadata.commit && (
+										<Link
+											href={`https://github.com/${changeData.metadata.repo || project}/commit/${changeData.metadata.commit}`}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="border border-zinc-800 bg-transparent hover:bg-white/5 text-white font-bold rounded-xl px-6 h-11 inline-flex items-center justify-center transition-colors"
+										>
+											<Github className="mr-2 h-4 w-4" /> View Commit
+										</Link>
+									)}
+								</div>
+							</div>
 
 							<div className="flex items-center">
 								<Link

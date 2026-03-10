@@ -6,6 +6,7 @@ import AnimatedContent from '@/components/AnimatedContent';
 import TimelineFilterWrapper from '@/components/TimelineFilterWrapper';
 import { Badge } from '@/components/ui/badge';
 import { ChevronRight, Clock } from 'lucide-react';
+import Link from 'next/link';
 
 interface ChangesPageProps {
 	params: Promise<{
@@ -40,13 +41,13 @@ export default async function ChangesPage({ params }: ChangesPageProps) {
 					<AnimatedContent>
 						<div className="mx-auto w-full min-w-0 px-4 md:px-0 max-w-3xl">
 							<div className="mb-6 flex items-center space-x-1.5 text-[13px] text-zinc-500 font-medium">
-								<div className="hover:text-zinc-300 transition-colors cursor-pointer">
+								<Link href="/projects" className="hover:text-zinc-300 transition-colors cursor-pointer">
 									Projects
-								</div>
+								</Link>
 								<ChevronRight className="h-3.5 w-3.5 opacity-50" />
-								<div className="hover:text-zinc-300 transition-colors cursor-pointer text-white">
+								<Link href={`/projects/${project}`} className="hover:text-zinc-300 transition-colors cursor-pointer text-white">
 									{projectName}
-								</div>
+								</Link>
 								<ChevronRight className="h-3.5 w-3.5 opacity-50" />
 								<div className="text-white">
 									Timeline

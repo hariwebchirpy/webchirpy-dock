@@ -177,7 +177,7 @@ The output markdown MUST follow this EXACT structure:
 
 ---
 title: Code Change
-repo: ${projectPath}
+repo: ${githubRepo || projectPath}
 commit: ${commitHash}
 date: ${date}
 sequence: ${sequenceNumber}/${commitHashes.length}

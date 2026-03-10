@@ -1,6 +1,6 @@
 ---
 title: Code Change
-repo: brilliant-office/changes/mobile
+repo: webchirpy-new/brilliantoffice_mob
 commit: 854a1de0da913220a62c41cd82971eeb720df526
 date: 2026-03-10
 sequence: 1/1

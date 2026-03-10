@@ -53,13 +53,13 @@ export default async function DocPage({ params }: PageProps) {
 					<AnimatedContent>
 						<div className="mx-auto w-full min-w-0 px-4 md:px-0">
 							<div className="mb-6 flex items-center space-x-1.5 text-[13px] text-zinc-500 font-medium">
-								<div className="hover:text-zinc-300 transition-colors cursor-pointer">
+								<Link href="/projects" className="hover:text-zinc-300 transition-colors cursor-pointer">
 									Projects
-								</div>
+								</Link>
 								<ChevronRight className="h-3.5 w-3.5 opacity-50" />
-								<div className="hover:text-zinc-300 transition-colors cursor-pointer">
+								<Link href={`/projects/${project}`} className="hover:text-zinc-300 transition-colors cursor-pointer">
 									{projectName}
-								</div>
+								</Link>
 								<ChevronRight className="h-3.5 w-3.5 opacity-50" />
 								<div className="text-white">
 									{docTitle}
@@ -102,7 +102,7 @@ export default async function DocPage({ params }: PageProps) {
 								</div>
 								<div className="flex flex-wrap gap-4">
 									<Link
-										href="https://github.com/hariwebchirpy/webchirpy-dock"
+										href={`https://github.com/hariwebchirpy/webchirpy-dock/blob/main/content/projects/${project}/${doc}.md`}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="bg-white text-black hover:bg-zinc-200 font-bold rounded-xl px-6 h-11 inline-flex items-center justify-center transition-colors"

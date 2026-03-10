@@ -99,7 +99,8 @@ export default function Timeline({ items, projectSlug }: TimelineProps) {
 										onClick={(e) => {
 											e.preventDefault();
 											e.stopPropagation();
-											window.open(`https://github.com/hariwebchirpy/${item.repo || projectSlug}/commit/${item.commit}`, '_blank');
+											const fullRepo = (item.repo && item.repo.includes('/')) ? item.repo : `hariwebchirpy/${item.repo || projectSlug}`;
+											window.open(`https://github.com/${fullRepo}/commit/${item.commit}`, '_blank');
 										}}
 										className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500 hover:text-white transition-colors bg-zinc-900 px-2 py-0.5 rounded cursor-pointer border border-zinc-800/50"
 									>

@@ -1,6 +1,6 @@
 ---
 title: Code Change
-repo: webchirpy-dock/changes/frontend
+repo: hariwebchirpy/webchirpy-dock
 commit: 18b3115a03c7a6b57c61b9a65b61254a13cebce6
 date: 2026-03-10
 sequence: 1/2

@@ -1,6 +1,6 @@
 ---
 title: Code Change
-repo: brilliant-office/changes/backend
+repo: webchirpy-new/ordering-backend
 commit: 284df56da1aef7112a6d3977ca359d6e9f077dac
 date: 2026-03-10
 sequence: 1/1

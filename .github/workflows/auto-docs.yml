@@ -74,8 +74,8 @@ jobs:
           echo "Target Path: $TARGET_PATH"
 
           if [ ! -d "content/projects/$TARGET_PATH" ]; then
-            echo "No generated documentation found in expected source directory (content/projects/$TARGET_PATH)"
-            exit 0
+            echo "No generated documentation found in expected source directory (content/projects/$TARGET_PATH). Creating structure..."
+            mkdir -p "content/projects/$TARGET_PATH"
           fi
 
           mkdir -p "docs-repo/content/projects/$TARGET_PATH"

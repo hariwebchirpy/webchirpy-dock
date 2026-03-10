@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# temp repos
+temp_repos/
+
+
+-- DOCS_REPO_TOKEN = ghp_9Y6rE8VUtA4W8Ec.lua

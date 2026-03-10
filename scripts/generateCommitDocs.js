@@ -93,17 +93,34 @@ async function generateCommitDocs() {
       }
     }
 
-    const repoName = process.env.PROJECT_NAME || detectedProject || path.basename(process.cwd());
-    const rawRepoSlug = toSafePathSegment(repoName);
-    const repoSlug = rawRepoSlug.replace(/-changes-.*$/, '');
-    const categoryMatch = rawRepoSlug.match(/-changes-(.*)$/);
-    const category = categoryMatch ? categoryMatch[1] : null;
+    const githubRepo = process.env.GITHUB_REPOSITORY || '';
+    const repoBaseName = path.basename(process.cwd());
+    
+    const repoToPathMap = {
+      'webchirpy-new/ordering-backend': 'brilliant-office/changes/backend',
+      'webchirpy-new/ordering-frontend': 'brilliant-office/changes/frontend',
+      'webchirpy-new/brilliantoffice_mob': 'brilliant-office/changes/mobile',
+      'webchirpy-new/mytax': 'taxsense/changes/backend',
+      'webchirpy-new/mytax_web': 'taxsense/changes/frontend',
+      'webchirpy-new/mytax_app': 'taxsense/changes/mobile',
+      'hariwebchirpy/webchirpy-dock': 'webchirpy-dock/changes/frontend'
+    };
+    
+    const shortRepoToPathMap = {
+      'ordering-backend': 'brilliant-office/changes/backend',
+      'ordering-frontend': 'brilliant-office/changes/frontend',
+      'brilliantoffice_mob': 'brilliant-office/changes/mobile',
+      'mytax': 'taxsense/changes/backend',
+      'mytax_web': 'taxsense/changes/frontend',
+      'mytax_app': 'taxsense/changes/mobile',
+      'webchirpy-dock': 'webchirpy-dock/changes/frontend'
+    };
 
-    const projectSource = process.env.PROJECT_NAME ? 'GitHub Secret (PROJECT_NAME)' : detectedProject ? 'Path Detection' : 'Default Directory Name';
-    console.log(`Using project name: ${repoName} (Source: ${projectSource})`);
-    if (category) {
-      console.log(`Detected category: ${category}`);
-    }
+    let projectPath = repoToPathMap[githubRepo] || shortRepoToPathMap[repoBaseName] || process.env.PROJECT_NAME || detectedProject || repoBaseName;
+
+    const projectSource = repoToPathMap[githubRepo] ? 'GitHub Repo Mapping' : shortRepoToPathMap[repoBaseName] ? 'Folder Name Mapping' : process.env.PROJECT_NAME ? 'GitHub Secret (PROJECT_NAME)' : detectedProject ? 'Path Detection' : 'Default Directory Name';
+    console.log(`Using project path: ${projectPath} (Source: ${projectSource})`);
+
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey || !apiKey.startsWith('sk-or-')) {
       console.error('Error: Invalid or missing OPENROUTER_API_KEY. It should start with "sk-or-".');
@@ -160,7 +177,7 @@ The output markdown MUST follow this EXACT structure:
 
 ---
 title: Code Change
-repo: ${repoName}
+repo: ${projectPath}
 commit: ${commitHash}
 date: ${date}
 sequence: ${sequenceNumber}/${commitHashes.length}
@@ -229,22 +246,22 @@ List the major files involved.
 
       console.log('\nGeneration complete.');
 
+      let cleanPathSegments = projectPath.split('/').map(p => toSafePathSegment(p, p));
+
       const pathSegments = [
         process.cwd(),
         "content",
         "projects",
-        repoSlug,
-        "changes"
+        ...cleanPathSegments
       ];
-      if (category) {
-        pathSegments.push(category);
-      }
+      
       const outputDir = path.join(...pathSegments);
 
       // ensure directory exists
       fs.mkdirSync(outputDir, { recursive: true });
 
-      const fileName = `${date}-${repoSlug}-${shortHash}.md`;
+      const safePrefix = cleanPathSegments.join('-');
+      const fileName = `${date}-${safePrefix}-${shortHash}.md`;
       const filePath = path.join(outputDir, fileName);
 
       fs.writeFileSync(filePath, markdownContent);

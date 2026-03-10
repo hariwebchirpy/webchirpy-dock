@@ -57,40 +57,29 @@ jobs:
       - name: Copy Generated Docs
         if: ${{ env.DOCS_REPO != '' }}
         run: |
-          # Extract base project and category from patterns like 'myproject-changes-frontend'
-          RAW_PROJECT="${PROJECT_NAME:-${GITHUB_REPOSITORY##*/}}"
-
-          # Use bash parameter expansion to strip suffix and prefix
-          SOURCE_PROJECT="${RAW_PROJECT%%-changes-*}"
-
-          # Check if RAW_PROJECT actually contains '-changes-'
-          if [[ "$RAW_PROJECT" == *"-changes-"* ]]; then
-            CATEGORY="${RAW_PROJECT##*-changes-}"
-          else
-            CATEGORY=""
+          TARGET_PATH=""
+          if [ "$GITHUB_REPOSITORY" = "webchirpy-new/ordering-backend" ]; then TARGET_PATH="brilliant-office/changes/backend";
+          elif [ "$GITHUB_REPOSITORY" = "webchirpy-new/ordering-frontend" ]; then TARGET_PATH="brilliant-office/changes/frontend";
+          elif [ "$GITHUB_REPOSITORY" = "webchirpy-new/brilliantoffice_mob" ]; then TARGET_PATH="brilliant-office/changes/mobile";
+          elif [ "$GITHUB_REPOSITORY" = "webchirpy-new/mytax" ]; then TARGET_PATH="taxsense/changes/backend";
+          elif [ "$GITHUB_REPOSITORY" = "webchirpy-new/mytax_web" ]; then TARGET_PATH="taxsense/changes/frontend";
+          elif [ "$GITHUB_REPOSITORY" = "webchirpy-new/mytax_app" ]; then TARGET_PATH="taxsense/changes/mobile";
+          elif [ "$GITHUB_REPOSITORY" = "hariwebchirpy/webchirpy-dock" ]; then TARGET_PATH="webchirpy-dock/changes/frontend";
           fi
 
-          echo "Base Project string: $SOURCE_PROJECT"
-          echo "Category: $CATEGORY"
+          if [ -z "$TARGET_PATH" ]; then
+            TARGET_PATH="${PROJECT_NAME:-${GITHUB_REPOSITORY##*/}}"
+          fi
 
-          if [ ! -d "content/projects/$SOURCE_PROJECT/changes" ]; then
-            echo "No generated documentation found in expected source directory"
+          echo "Target Path: $TARGET_PATH"
+
+          if [ ! -d "content/projects/$TARGET_PATH" ]; then
+            echo "No generated documentation found in expected source directory (content/projects/$TARGET_PATH)"
             exit 0
           fi
 
-          if [ -n "$CATEGORY" ]; then
-            # Sync only the specific category folder
-            mkdir -p docs-repo/content/projects/$SOURCE_PROJECT/changes/$CATEGORY
-            if [ -d "content/projects/$SOURCE_PROJECT/changes/$CATEGORY" ]; then
-                cp -R content/projects/$SOURCE_PROJECT/changes/$CATEGORY/. \
-                      docs-repo/content/projects/$SOURCE_PROJECT/changes/$CATEGORY/
-            fi
-          else
-            # Sync everything
-            mkdir -p docs-repo/content/projects/$SOURCE_PROJECT/changes
-            cp -R content/projects/$SOURCE_PROJECT/changes/. \
-                  docs-repo/content/projects/$SOURCE_PROJECT/changes/
-          fi
+          mkdir -p "docs-repo/content/projects/$TARGET_PATH"
+          cp -R "content/projects/$TARGET_PATH/." "docs-repo/content/projects/$TARGET_PATH/"
 
       # 7. Debug step (helps when something breaks)
       - name: Debug docs repo state

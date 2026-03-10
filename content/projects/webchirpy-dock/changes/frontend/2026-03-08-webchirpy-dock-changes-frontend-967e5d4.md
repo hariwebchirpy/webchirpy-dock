@@ -1,4 +1,3 @@
-```markdown
 ---
 title: Code Change
 repo: webchirpy-dock/changes/frontend
@@ -42,4 +41,3 @@ Additionally, this commit includes the generation of documentation markdown file
 *   `.github/workflows/auto-docs.yml`: Updated CI workflow for automated documentation generation.
 *   `content/projects/webchirpy-dock-changes-frontend/changes/2026-03-08-webchirpy-dock-changes-frontend-2cf96c4.md`: A newly generated documentation file for a commit.
 *   `content/projects/webchirpy-dock-changes-frontend/changes/2026-03-08-webchirpy-dock-changes-frontend-f35ce0c.md`: A newly generated documentation file for a commit.
-```

@@ -212,7 +212,7 @@ List the major files involved.
               messages: [
                 {
                   role: "system",
-                  content: "You are a technical writer specializing in developer documentation. Your task is to analyze git commits and generate clear, concise, and accurate documentation."
+                  content: "You are a technical writer specializing in developer documentation. Your task is to analyze git commits and generate clear, concise, and accurate documentation. Output ONLY raw markdown. DO NOT wrap your entire response in ```markdown or any other code blocks. Start directly with the frontmatter (---)." 
                 },
                 {
                   role: "user",
@@ -241,6 +241,21 @@ List the major files involved.
         if (content) {
           markdownContent += content;
           process.stdout.write(content);
+        }
+      }
+
+      // Clean up the markdown content: strip leading/trailing code blocks if the AI included them
+      markdownContent = markdownContent.trim();
+      if (markdownContent.startsWith('```')) {
+        // Remove the first line if it starts with ```
+        const lines = markdownContent.split('\n');
+        if (lines[0].startsWith('```')) {
+          lines.shift();
+          // Also remove the last line if it's just ```
+          if (lines.length > 0 && lines[lines.length - 1].trim() === '```') {
+            lines.pop();
+          }
+          markdownContent = lines.join('\n').trim();
         }
       }
 

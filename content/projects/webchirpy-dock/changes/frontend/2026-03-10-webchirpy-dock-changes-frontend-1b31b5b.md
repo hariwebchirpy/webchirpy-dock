@@ -1,4 +1,3 @@
-```markdown
 ---
 title: Code Change
 repo: webchirpy-dock/changes/frontend
@@ -22,4 +21,3 @@ This change improves the reliability of the automated documentation generation p
 # Files Modified
 
 *   `content/projects/taxsense/changes/frontend/2026-03-10-taxsense-changes-frontend-d98c1b2.md`
-```

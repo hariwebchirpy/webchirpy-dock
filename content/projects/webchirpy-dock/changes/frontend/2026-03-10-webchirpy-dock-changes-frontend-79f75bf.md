@@ -1,4 +1,3 @@
-```markdown
 ---
 title: Code Change
 repo: webchirpy-dock/changes/frontend
@@ -22,4 +21,3 @@ This change is documentation-only and is not expected to have any impact on setu
 # Files Modified
 
 This commit primarily involves updates to documentation files. The specific files updated are not detailed in the provided diff but are related to commit documentation within the `webchirpy-dock/changes/frontend` repository.
-```

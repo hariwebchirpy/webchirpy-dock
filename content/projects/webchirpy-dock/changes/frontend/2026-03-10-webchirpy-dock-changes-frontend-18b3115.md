@@ -1,4 +1,3 @@
-```markdown
 ---
 title: Code Change
 repo: webchirpy-dock/changes/frontend
@@ -22,4 +21,3 @@ This change enhances the robustness of the CI/CD pipeline for documentation gene
 # Files Modified
 
 *   `.github/workflows/auto-docs.yml`
-```

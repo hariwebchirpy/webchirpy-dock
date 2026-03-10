@@ -3,7 +3,7 @@ import { getProjectDocs, getProjectChanges } from '@/lib/docs';
 import Sidebar from '@/components/Sidebar';
 import DocLayout from '@/components/DocLayout';
 import AnimatedContent from '@/components/AnimatedContent';
-import Timeline from '@/components/Timeline';
+import TimelineFilterWrapper from '@/components/TimelineFilterWrapper';
 import { Badge } from '@/components/ui/badge';
 import { ChevronRight, Clock } from 'lucide-react';
 
@@ -71,7 +71,7 @@ export default async function ChangesPage({ params }: ChangesPageProps) {
 								</p>
 							</div>
 
-							<Timeline items={changes} projectSlug={project} />
+							<TimelineFilterWrapper items={changes as any[]} projectSlug={project} />
 						</div>
 					</AnimatedContent>
 				</main>

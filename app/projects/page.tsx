@@ -1,11 +1,8 @@
-import Link from 'next/link';
 import { getProjects } from '@/lib/docs';
 import DocLayout from '@/components/DocLayout';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import AnimatedProjectGrid from '@/components/AnimatedProjectGrid';
-import { Separator } from '@/components/ui/separator';
-import { ArrowRight, BookOpen, ExternalLink, Library, Rocket, ShieldCheck } from 'lucide-react';
+import { Library } from 'lucide-react';
+import Chat from '@/components/Chat';
 
 export default async function ProjectsPage() {
 	const projects = await getProjects();
@@ -27,6 +24,10 @@ export default async function ProjectsPage() {
 				</div>
 
 				<AnimatedProjectGrid projects={projects} />
+
+				<section className="mt-16 h-[520px] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
+					<Chat />
+				</section>
 			</main>
 		</DocLayout>
 	);

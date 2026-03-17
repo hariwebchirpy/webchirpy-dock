@@ -174,13 +174,21 @@ export async function getAllContext(): Promise<string> {
 	for (const project of projects) {
 		context += `Project: ${project.name} (${project.slug})\n`;
 		context += `Description: ${project.description}\n`;
+
+		const docs = await getProjectDocs(project.slug);
+		if (docs.length > 0) {
+			context += "Core Documentation Files:\n";
+			docs.forEach(doc => {
+				context += `- ${doc.title}: content/projects/${project.slug}/${doc.slug}.md\n`;
+			});
+		}
 		
 		const changes = await getProjectChanges(project.slug);
 		if (changes.length > 0) {
 			context += "Recent Changes/Commits:\n";
 			// Include top 5 changes for brevity
 			changes.slice(0, 5).forEach(change => {
-				context += `- Date: ${change.date || 'unknown'}, Hash: ${change.commit || 'unknown'}, Author: ${change.author || 'unknown'}, Message: ${change.title}\n`;
+				context += `- Date: ${change.date || 'unknown'}, Hash: ${change.commit || 'unknown'}, Author: ${change.author || 'unknown'}, Message: ${change.title}, File: content/projects/${project.slug}/changes/${change.slug}.md\n`;
 			});
 		}
 		context += "\n---\n\n";

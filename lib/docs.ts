@@ -29,6 +29,14 @@ export interface DocListItem {
 	order: number;
 }
 
+export interface ChangeListItem extends DocListItem {
+	date?: string;
+	commit?: string;
+	repo?: string;
+	author?: string;
+	category?: string;
+}
+
 export async function getProjects(): Promise<ProjectInfo[]> {
 	if (!fs.existsSync(contentDirectory)) return [];
 
@@ -107,7 +115,7 @@ export async function getDocContent(projectSlug: string, docSlug: string): Promi
 	};
 }
 
-export async function getProjectChanges(projectSlug: string): Promise<DocListItem[]> {
+export async function getProjectChanges(projectSlug: string): Promise<ChangeListItem[]> {
 	const changesPath = path.join(contentDirectory, projectSlug, 'changes');
 	if (!fs.existsSync(changesPath)) return [];
 
@@ -144,6 +152,7 @@ export async function getProjectChanges(projectSlug: string): Promise<DocListIte
 			date: data.date,
 			commit: data.commit,
 			repo: data.repo,
+			author: data.author,
 			category: category ? category.charAt(0).toUpperCase() + category.slice(1) : undefined,
 		};
 	});

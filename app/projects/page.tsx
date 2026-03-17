@@ -2,14 +2,13 @@ import { getProjects } from '@/lib/docs';
 import DocLayout from '@/components/DocLayout';
 import AnimatedProjectGrid from '@/components/AnimatedProjectGrid';
 import { Library } from 'lucide-react';
-import Chat from '@/components/Chat';
 
 export default async function ProjectsPage() {
 	const projects = await getProjects();
 
 	return (
 		<DocLayout>
-			<main className="container mx-auto px-6   py-20 max-w-7xl">
+			<main className="container mx-auto px-6 py-20 max-w-7xl">
 				<div className="flex flex-col gap-6 mb-16 max-w-2xl">
 					<div className="flex items-center gap-2 text-blue-500 font-bold uppercase tracking-widest text-[10px] bg-blue-500/10 w-fit px-3 py-1 rounded-full border border-blue-500/20">
 						<Library className="h-3 w-3" />
@@ -24,10 +23,6 @@ export default async function ProjectsPage() {
 				</div>
 
 				<AnimatedProjectGrid projects={projects} />
-
-				<section className="mt-16 h-[520px] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
-					<Chat />
-				</section>
 			</main>
 		</DocLayout>
 	);

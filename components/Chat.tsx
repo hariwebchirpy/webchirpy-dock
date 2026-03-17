@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageCircle, X, Send, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 type Message = {
   role: "user" | "assistant";
@@ -99,13 +100,19 @@ export default function Chat() {
                 >
                   <div
                     className={cn(
-                      "max-w-[85%] rounded-2xl px-4 py-2 text-sm leading-relaxed",
+                      "rounded-2xl px-4 py-2 text-sm leading-relaxed",
                       msg.role === "user"
-                        ? "bg-blue-600 text-white"
-                        : "bg-zinc-900 text-zinc-200 border border-zinc-800"
+                        ? "max-w-[85%] bg-blue-600 text-white"
+                        : "w-full bg-zinc-900 text-zinc-200 border border-zinc-800"
                     )}
                   >
-                    <div>{msg.content}</div>
+                    <div>
+                      {msg.role === "user" ? (
+                        msg.content
+                      ) : (
+                        <MarkdownRenderer content={msg.content} />
+                      )}
+                    </div>
 
                     {msg.sources && msg.sources.length > 0 && (
                       <div className="mt-3 border-t border-white/10 pt-2 text-[10px] opacity-60">

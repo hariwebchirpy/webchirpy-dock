@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 import rehypeHighlight from 'rehype-highlight';
 import Link from 'next/link';
+import { Check, Copy } from 'lucide-react';
 
 interface MarkdownRendererProps {
   content: string;
@@ -11,9 +14,64 @@ interface MarkdownRendererProps {
   isChangeDoc?: boolean;
 }
 
+function CopyButton({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="absolute right-3 top-3 flex items-center gap-1 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-400 transition-colors hover:border-zinc-500 hover:text-white"
+      title="Copy code"
+    >
+      {copied ? (
+        <>
+          <Check className="h-3 w-3 text-green-400" />
+          <span className="text-green-400">Copied</span>
+        </>
+      ) : (
+        <>
+          <Copy className="h-3 w-3" />
+          <span>Copy</span>
+        </>
+      )}
+    </button>
+  );
+}
+
+function InlineCode({ children }: { children: React.ReactNode }) {
+  const [copied, setCopied] = useState(false);
+
+  const text = typeof children === 'string' ? children : String(children ?? '');
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <code
+      onClick={handleCopy}
+      title="Click to copy"
+      className="group relative inline-flex cursor-pointer items-center gap-1 rounded-lg bg-zinc-900 px-2 py-0.5 font-mono text-sm text-zinc-200 transition-colors hover:bg-zinc-800 hover:text-white"
+    >
+      {text}
+      <span className="ml-0.5 opacity-0 transition-opacity group-hover:opacity-60">
+        {copied ? <Check className="h-3 w-3 text-green-400" /> : <Copy className="h-3 w-3" />}
+      </span>
+    </code>
+  );
+}
+
 export default function MarkdownRenderer({ content, projectSlug, isChangeDoc }: MarkdownRendererProps) {
   return (
-    <div className="prose prose-zinc dark:prose-invert max-w-none 
+    <div className="prose prose-zinc dark:prose-invert max-w-none
       prose-headings:scroll-mt-20
       prose-h1:text-4xl prose-h1:font-extrabold prose-h1:tracking-tight prose-h1:mb-10 prose-h1:text-white
       prose-h2:text-2xl prose-h2:font-bold prose-h2:tracking-tight prose-h2:mt-16 prose-h2:mb-6 prose-h2:border-b prose-h2:border-zinc-900 prose-h2:pb-3 prose-h2:text-white
@@ -30,9 +88,32 @@ export default function MarkdownRenderer({ content, projectSlug, isChangeDoc }: 
       prose-td:p-5 prose-td:border-b prose-td:border-zinc-900/50 prose-td:text-zinc-400
     ">
       <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
+        remarkPlugins={[remarkGfm, remarkBreaks]}
         rehypePlugins={[rehypeHighlight]}
         components={{
+          code: ({ node, className, children, ...props }) => {
+            // If it's inside a pre (fenced block), render normally
+            const isBlock = !!className;
+            if (isBlock) return <code className={className} {...props}>{children}</code>;
+            return <InlineCode>{children}</InlineCode>;
+          },
+          pre: ({ node, children, ...props }) => {
+            // Extract text content from the code element inside pre
+            const codeEl = (children as any)?.[0];
+            const codeText =
+              typeof codeEl?.props?.children === 'string'
+                ? codeEl.props.children
+                : Array.isArray(codeEl?.props?.children)
+                ? codeEl.props.children.join('')
+                : '';
+
+            return (
+              <div className="relative group">
+                <pre {...props}>{children}</pre>
+                <CopyButton code={codeText} />
+              </div>
+            );
+          },
           h2: ({ node, ...props }) => {
             const id = String(props.children)
               .toLowerCase()
@@ -49,13 +130,10 @@ export default function MarkdownRenderer({ content, projectSlug, isChangeDoc }: 
           },
           a: ({ node, href, ...props }) => {
             if (href && projectSlug && (href.endsWith('.md') || !href.includes(':'))) {
-              // Transform relative markdown links
               let targetHref = href.replace(/\.md$/, '');
 
-              // If it's a relative link within a project
               if (!targetHref.startsWith('/') && !targetHref.startsWith('http')) {
                 if (isChangeDoc) {
-                  // For change docs, relative links might be trickier, but usually they point back to general docs or other changes
                   targetHref = `/projects/${projectSlug}/changes/${targetHref}`;
                 } else {
                   targetHref = `/projects/${projectSlug}/${targetHref}`;
